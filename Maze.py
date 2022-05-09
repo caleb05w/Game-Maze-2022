@@ -9,8 +9,11 @@ YELLOW = (255, 255, 0)
 SKY_BLUE = (95, 165, 228)
 WIDTH = 800
 HEIGHT = 600
-TITLE = "<You're title here>"
+TITLE = "Maze Game"
 
+class Player(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
 
 def main():
     pygame.init()
