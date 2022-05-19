@@ -1,6 +1,7 @@
 #Maze Game
 
 import pygame
+font_name = pygame.font.match_font('menlo')
 
 # ----- CONSTANTS
 BLACK = (0, 0, 0)
@@ -11,16 +12,27 @@ WIDTH = 800
 HEIGHT = 600
 TITLE = "Maze Game"
 
+background_image = pygame.image.load("./assets/[ogger.jpeg")
+
+def draw_text(surf, text, size, x, y):
+    font = pygame.font.Font(font_name, size)
+    text_surface = font.render(text, True, WHITE)
+    text_rect = text_surface.get_rect()
+    text_rect.midtop = (x, y)
+    surf.blit(text_surface, text_rect)
+
+
+
 class Player(pygame.sprite.Sprite):
-    change_x = 0
-    change_y = 0
+
     def __init__(self, x, y):
         super().__init__()
+
 
         # Image
         self.image = pygame.image.load("./assets/runner.png.webp")
         # Scale
-        self.image = pygame.transform.scale(self.image, (38, 38))
+        self.image = pygame.transform.scale(self.image, (32, 32))
         # self.image.set_colorkey((WHITE))    # set transparency
 
         # RECT the hitbox
@@ -44,6 +56,7 @@ class Player(pygame.sprite.Sprite):
 
         # Did this update cause us to hit a wall?
         block_hit_list = pygame.sprite.spritecollide(self, walls, False)
+
         for block in block_hit_list:
             # If we are moving right, set our right side to the left side of
             # the item we hit
@@ -67,6 +80,7 @@ class Player(pygame.sprite.Sprite):
                 self.rect.top = block.rect.bottom
 
 
+
 class Room(object):
     """ Base class for all rooms. """
 
@@ -78,6 +92,8 @@ class Room(object):
         """ Constructor, create our lists. """
         self.wall_list = pygame.sprite.Group()
         self.enemy_sprites = pygame.sprite.Group()
+
+
 
 
 class Room1(Room):
@@ -95,10 +111,47 @@ class Room1(Room):
             [780, 350, 20, 250, WHITE],
             [20, 0, 760, 20, WHITE],
             [20, 580, 760, 20, WHITE],
-            [390, 50, 20, 500, BLUE]
+            [180, 100, 20, 400, BLUE],
+            [390, 100, 20, 400, BLUE],
+            [100, 100, 20, 200, BLUE],
+            [100, 100, 300, 20, BLUE],
+            [200, 180, 200, 20, BLUE]
          ]
 
         # Loop through the list. Create the wall, add it to the list
+        for item in walls:
+            wall = Wall(item[0], item[1], item[2], item[3], item[4])
+            self.wall_list.add(wall)
+
+
+class Room0(Room):
+    def __init__(self):
+        super().__init__()
+
+        walls = [
+            [0, 0, 20, 250, WHITE],
+            [0, 350, 20, 250, WHITE],
+            [780, 0, 20, 250, WHITE],
+            [780, 350, 20, 250, WHITE],
+            [20, 0, 760, 20, WHITE],
+            [20, 580, 760, 20, WHITE],
+        ]
+
+        # Convert csv file to list
+        maze_csv = open('./ASSETS/mazetrial.csv', mode='r', encoding='utf-8-sig')
+        row = 0
+        col = 0
+        for line in maze_csv:
+            # Split the line wherever there's a comma
+            wall_info = line.strip(" ").split(',')
+            for item in wall_info:
+                # if the item is zero, put a wall into the walls list
+                if item == '0':
+                    walls.append([20 + 20 * col, 20 + 20 * row, 20, 20, BLUE])
+                col += 1
+            row += 1
+            col = 0
+
         for item in walls:
             wall = Wall(item[0], item[1], item[2], item[3], item[4])
             self.wall_list.add(wall)
@@ -170,6 +223,22 @@ class Wall(pygame.sprite.Sprite):
 #             wall = Wall(x, 200, 20, 200, WHITE)
 #             self.wall_list.add(wall)
 
+
+def show_go_screen(screen):
+    background = pygame.Surface((WIDTH, HEIGHT))
+    background.fill(BLACK)
+
+    screen.blit(background, (0, 0))
+
+    draw_text(screen, "YOU WIN!", 64, WIDTH / 2, HEIGHT / 4)
+    draw_text(screen, "Good job", 22,
+              WIDTH / 2, HEIGHT / 2)
+    draw_text(screen, "The game is over", 18, WIDTH / 2, HEIGHT * 3 / 4)
+    pygame.display.flip()
+
+    pygame.time.delay(3000)
+
+
 def main():
     pygame.init()
 
@@ -181,6 +250,7 @@ def main():
     # ----- LOCAL VARIABLES
     done = False
     clock = pygame.time.Clock()
+    game_over = False
 
     # Create sprite groups
     all_sprites_group = pygame.sprite.Group()
@@ -188,16 +258,17 @@ def main():
     # player.level = current_level
 
     # Create sprites to fill the groups
-    player = Player(50, 50)
+    #Spawn location
+    player = Player(0, 320)
     all_sprites_group.add(player)
 
     # Create Rooms in Room List
-    rooms = [Room1()]
+    rooms = [Room0()]
 
     current_room_no = 0
     current_room = rooms[current_room_no]
 
-    # ----- MAIN LOOP
+        #----- MAIN LOOP
     while not done:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -212,6 +283,8 @@ def main():
                     player.changespeed(0, -5)
                 if event.key == pygame.K_DOWN:
                     player.changespeed(0, 5)
+                if event.key == pygame.K_SPACE:
+                    player.change_x, player.change_y = (0, 0)
 
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_LEFT:
@@ -225,6 +298,10 @@ def main():
 
         # Update the player.
         player.move(current_room.wall_list)
+        if not pygame.key.get_pressed()[pygame.K_UP] and not pygame.key.get_pressed()[pygame.K_DOWN] and not pygame.key.get_pressed()[pygame.K_LEFT] and not pygame.key.get_pressed()[pygame.K_RIGHT] and (player.change_x != 0 or player.change_y != 0):
+            player.change_x, player.change_y = (0, 0)
+
+        print(player.change_x, player.change_y)
 
 
         # -- Event Handler
@@ -239,6 +316,9 @@ def main():
         current_room.wall_list.draw(screen)
         all_sprites_group.draw(screen)
 
+        if player.rect.x > 801:
+            show_go_screen(screen)
+            done = True
 
         # ----- UPDATE DISPLAY
         pygame.display.flip()
